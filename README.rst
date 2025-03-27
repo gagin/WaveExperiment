@@ -4,7 +4,7 @@ Parametric Wave Layers vs MLP vs RNN: Parameter Efficiency Analysis
 
 :Author: Alex Gaggin
 :Date: March 28, 2024
-:Version: 1.4 (Uses list-tables and text math for GitHub RST)
+:Version: 1.5 (Uses list-tables, standard math directive for MD conversion)
 
 .. meta::
    :description: Comparison of a custom Network with WaveLayers against MLP and RNN baselines on MNIST and RSI prediction tasks, focusing on parameter efficiency and activation functions.
@@ -38,9 +38,10 @@ The total pre-activation input to output neuron ``j`` is:
 
    \text{output}_j = \sum_{i} [ A_{ij} \cdot \sin(\omega_{ij} \cdot x_i + \phi_{ij}) ] + B_j
 
-*(Note: Math rendering depends on the RST viewer; GitHub does not render this directly from RST).*
+*(Note: The math directives above are intended for conversion to formats like Markdown+MathJax/KaTeX or LaTeX. Direct RST rendering on platforms like GitHub may show raw source).*
 
 A network constructed using these layers introduces non-linearity and periodicity *within* the layer transformation itself.
+
 Methodology
 ===========
 
@@ -85,11 +86,11 @@ MNIST Results
      - 12
      - 93.54%
      - ~86s
-   * - **MLP H=72 (ReLU)**
+   * - MLP H=72 (ReLU)
      - 57,250
      - 12
-     - **95.85%**
-     - **~40s**
+     - 95.85%
+     - ~40s
 
 *(Note: A larger Network with WaveLayers (H=128, ~305k params) was required to reach ~95% accuracy).*
 
@@ -125,30 +126,30 @@ RSI Results
      - test_rmse
      - baseline_rmse
      - training_time_s
-   * - **LSTM_H32_L1_Seq14**
+   * - LSTM_H32_L1_Seq14
      - lstm
      - 32
      - N/A
      - 4,513
-     - **4.5770**
+     - 4.5770
      - 4.6425
      - ~6.9s
-   * - **MLP_H_eq_Wave24_Sin_Seq14**
+   * - MLP_H_eq_Wave24_Sin_Seq14
      - mlp
      - 69
      - sin
      - 1,105
-     - **4.5857**
+     - 4.5857
      - 4.6425
-     - *(loaded)*
-   * - *WaveLayerNet_H24_Seq14*
-     - *wave*
-     - *24*
-     - *sin*
-     - *1,105*
-     - *4.6074*
+     - (loaded)
+   * - WaveLayerNet_H24_Seq14
+     - wave
+     - 24
+     - sin
+     - 1,105
+     - 4.6074
      - 4.6425
-     - *(loaded)*
+     - (loaded)
    * - MLP_H_eq_Wave16_Sin_Seq14
      - mlp
      - 46
@@ -156,7 +157,7 @@ RSI Results
      - 737
      - 4.6207
      - 4.6425
-     - *(loaded)*
+     - (loaded)
    * - GRU_H32_L1_Seq14
      - gru
      - 32
@@ -165,14 +166,14 @@ RSI Results
      - 4.6298
      - 4.6425
      - ~6.2s
-   * - *WaveLayerNet_H16_Seq14*
-     - *wave*
-     - *16*
-     - *sin*
-     - *737*
-     - *4.6375*
+   * - WaveLayerNet_H16_Seq14
+     - wave
+     - 16
+     - sin
+     - 737
+     - 4.6375
      - 4.6425
-     - *(loaded)*
+     - (loaded)
    * - MLP_H_eq_Wave24_Relu_Seq14
      - mlp
      - 69
@@ -180,7 +181,7 @@ RSI Results
      - 1,105
      - 4.6427
      - 4.6425
-     - *(loaded)*
+     - (loaded)
    * - MLP_H_eq_Wave16_Relu_Seq14
      - mlp
      - 46
@@ -188,7 +189,7 @@ RSI Results
      - 737
      - 4.6880
      - 4.6425
-     - *(loaded)*
+     - (loaded)
 
 *(Note: Baseline RMSE ~4.6425. 'wave' model_type refers to the Network with WaveLayers. Training time '(loaded)' indicates previous state loaded)*
 
