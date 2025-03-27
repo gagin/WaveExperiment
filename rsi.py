@@ -20,6 +20,7 @@ import json          # <-- Import json
 import argparse      # <-- Import argparse
 from pathlib import Path # For cleaner path handling
 from data_utils import fetch_data
+from models import GenericWaveNet, GenericMLP, LstmPredictor, GruPredictor, WaveLayer
 
 # --- Global Settings ---
 TICKER = "SPY"
@@ -82,82 +83,6 @@ def generate_model_filename(base_dir, run_id, model_type, hidden_size, activatio
     # Use run_id for subfolder organization
     save_path = Path(base_dir) / run_id / filename
     return save_path
-
-# --- Model Definitions ---
-
-class WaveLayer(nn.Module):
-    # ... (identical WaveLayer code from previous examples) ...
-    def __init__(self, n_in, n_out):
-        super().__init__()
-        self.n_in = n_in
-        self.n_out = n_out
-        self.A = nn.Parameter(torch.Tensor(n_in, n_out))
-        self.omega = nn.Parameter(torch.Tensor(n_in, n_out))
-        self.phi = nn.Parameter(torch.Tensor(n_in, n_out))
-        self.B = nn.Parameter(torch.Tensor(n_out))
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        stdv_a = math.sqrt(2.0 / self.n_in)
-        self.A.data.uniform_(-stdv_a, stdv_a)
-        self.omega.data.uniform_(0.5, 1.5)
-        self.phi.data.uniform_(0, 2 * math.pi)
-        fan_in = self.n_in
-        bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
-        self.B.data.uniform_(-bound, bound)
-
-    def forward(self, x):
-        x_expanded = x.unsqueeze(2)
-        omega_expanded = self.omega.unsqueeze(0)
-        phi_expanded = self.phi.unsqueeze(0)
-        A_expanded = self.A.unsqueeze(0)
-        wave_arg = omega_expanded * x_expanded + phi_expanded
-        wave_term = A_expanded * torch.sin(wave_arg)
-        summed_output = torch.sum(wave_term, dim=1)
-        output = summed_output + self.B.unsqueeze(0)
-        return output
-
-class WaveNetRSI(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size=1, activation_type='sin'):
-        super().__init__()
-        self.wave1 = WaveLayer(input_size, hidden_size)
-        self.activation_type = activation_type
-        if self.activation_type == 'relu':
-            self.activation_func = nn.ReLU()
-        elif self.activation_type == 'sin':
-            self.activation_func = torch.sin
-        else:
-             raise ValueError(f"Unsupported activation type '{activation_type}'")
-        # Final layer for regression (output_size=1), NO activation after this
-        self.wave2 = WaveLayer(hidden_size, output_size)
-
-    def forward(self, x):
-        # Input x is already (batch, sequence_length)
-        x = self.wave1(x)
-        x = self.activation_func(x)
-        x = self.wave2(x) # Output is (batch, 1)
-        return x
-
-class StandardMLP_RSI(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size=1, activation_type='relu'):
-        super().__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.activation_type = activation_type
-        if self.activation_type == 'relu':
-            self.activation_func = nn.ReLU()
-        elif self.activation_type == 'sin':
-            self.activation_func = torch.sin
-        else:
-             raise ValueError(f"Unsupported activation type '{activation_type}'")
-        # Final layer for regression (output_size=1), NO activation after this
-        self.fc2 = nn.Linear(hidden_size, output_size)
-
-    def forward(self, x):
-        # Input x is already (batch, sequence_length)
-        x = self.fc1(x)
-        x = self.activation_func(x)
-        x = self.fc2(x) # Output is (batch, 1)
-        return x
 
 # --- Training & Evaluation Functions ---
 
@@ -416,7 +341,7 @@ if __name__ == "__main__":
         val_data_scaled = scaler.transform(val_data_raw.reshape(-1, 1)).flatten()
         test_data_scaled = scaler.transform(test_data_raw.reshape(-1, 1)).flatten()
 
-        # --- 4. Create Sequences (Using Scaled Data) ---
+# --- 4. Create Sequences (Using Scaled Data) ---
         X_train_scaled, y_train_scaled = create_sequences(train_data_scaled, seq_length)
         X_val_scaled, y_val_scaled = create_sequences(val_data_scaled, seq_length)
         X_test_scaled, y_test_scaled = create_sequences(test_data_scaled, seq_length)
@@ -427,7 +352,7 @@ if __name__ == "__main__":
              continue
         print(f"Sequence shapes: X_train={X_train_scaled.shape}, X_val={X_val_scaled.shape}, X_test={X_test_scaled.shape}")
 
-        # --- 5. Create DataLoaders ---
+# --- 5. Create DataLoaders ---
         batch_size = config['batch_size']
         train_dataset = TensorDataset(torch.FloatTensor(X_train_scaled), torch.FloatTensor(y_train_scaled))
         val_dataset = TensorDataset(torch.FloatTensor(X_val_scaled), torch.FloatTensor(y_val_scaled))
@@ -437,42 +362,71 @@ if __name__ == "__main__":
         val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-        # --- 6. Instantiate Model ---
+# --- 6. Instantiate Model (UPDATED LOGIC) ---
         model = None
-        input_size = config['sequence_length']
+        model_type = config['model_type'].lower() # Use lower case for safety
         hidden_size = config['hidden_size']
-        activation = config['activation_type']
-        model_type = config['model_type']
+        input_size_for_mlp_wave = config['sequence_length'] # MLP/WaveNet take flattened sequence
+        input_features_for_rnn = 1 # LSTM/GRU take features per time step (univariate)
+        output_size = 1 # Regression task
 
-        if model_type == 'wave':
-            model = WaveNetRSI(input_size, hidden_size, output_size=1, activation_type=activation).to(DEVICE)
-        elif model_type == 'mlp':
-            model = StandardMLP_RSI(input_size, hidden_size, output_size=1, activation_type=activation).to(DEVICE)
-        else:
-            print(f"ERROR: Invalid model_type '{model_type}' in config. Skipping run.")
-            continue
+        print(f"Instantiating model type: {model_type}") # Debug print
 
-        total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f"Initialized {model_type.upper()} Model. Total parameters: {total_params:,}")
+        try:
+            if model_type == 'wave':
+                activation = config.get('activation_type', 'sin') # Default to sin if missing
+                model = GenericWaveNet(input_size=input_size_for_mlp_wave,
+                                       hidden_size=hidden_size,
+                                       output_size=output_size,
+                                       activation_type=activation).to(DEVICE)
+            elif model_type == 'mlp':
+                activation = config.get('activation_type', 'relu') # Default to relu if missing
+                model = GenericMLP(input_size=input_size_for_mlp_wave,
+                                   hidden_size=hidden_size,
+                                   output_size=output_size,
+                                   activation_type=activation).to(DEVICE)
+            elif model_type == 'lstm':
+                num_layers = config.get('num_layers', 1) # Allow specifying layers
+                model = LstmPredictor(input_features=input_features_for_rnn,
+                                      hidden_size=hidden_size,
+                                      output_size=output_size,
+                                      num_layers=num_layers).to(DEVICE)
+            elif model_type == 'gru':
+                num_layers = config.get('num_layers', 1)
+                model = GruPredictor(input_features=input_features_for_rnn,
+                                     hidden_size=hidden_size,
+                                     output_size=output_size,
+                                     num_layers=num_layers).to(DEVICE)
+            else:
+                print(f"ERROR: Invalid model_type '{model_type}' in config {config['run_id']}. Skipping run.")
+                continue
 
-        # --- 7. Generate Filename ---
+            total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            print(f"Initialized {model_type.upper()} Model. Total parameters: {total_params:,}")
+
+        except Exception as e:
+             print(f"ERROR: Failed to instantiate model {model_type} for run {config['run_id']}: {e}")
+             # import traceback # Optional for detailed error
+             # traceback.print_exc()
+             continue # Skip to next experiment if model creation fails
+
+
+# --- 7. Generate Filename (keep as before, ensure activation_str uses config.get) ---
+        activation_str = config.get('activation_type', 'default_act') # Handle missing activation type
+        lr = config['learning_rate']
+        epochs = config['epochs']
         model_path = generate_model_filename(
-            base_dir=BASE_SAVE_DIR,
-            run_id=config['run_id'],
-            model_type=model_type,
-            hidden_size=hidden_size,
-            activation_str=activation,
-            lr=config['learning_rate'],
-            epochs=config['epochs'], # Include epochs in filename for clarity
-            seq_length=seq_length
+            base_dir=BASE_SAVE_DIR, run_id=config['run_id'], model_type=model_type,
+            hidden_size=hidden_size, activation_str=activation_str, lr=lr, epochs=epochs, seq_length=seq_length
         )
         print(f"Model path: {model_path}")
 
-        # --- 8. Setup Optimizer and Criterion ---
-        optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
+
+# --- 8. Setup Optimizer and Criterion (keep as before) ---
+        optimizer = optim.Adam(model.parameters(), lr=lr)
         criterion = nn.MSELoss()
 
-        # --- 9. Train or Load ---
+# --- 9. Train or Load ---
         training_time = 0
         # If model file doesn't exist based on final epoch count, initiate training
         if not load_model(model, model_path, DEVICE):
@@ -486,12 +440,12 @@ if __name__ == "__main__":
             print("Loaded pre-trained model.")
 
 
-        # --- 10. Evaluate ---
+# --- 10. Evaluate ---
         metrics = evaluate_model(model, test_loader, criterion, scaler, DEVICE)
         metrics["training_time_s"] = training_time
         metrics["total_params"] = total_params
 
-        # --- 11. Store Results ---
+# --- 11. Store Results ---
         run_result = {**config, **metrics} # Combine config and metrics
         results_summary.append(run_result)
 
@@ -499,7 +453,7 @@ if __name__ == "__main__":
         print(f"===== Finished Run {i+1}/{len(experiments)}: {config['run_id']} in {run_end_time - run_start_time:.2f}s =====")
 
 
-    # --- 12. Final Summary Table ---
+# --- 12. Final Summary Table ---
     print("\n\n===== Overall Experiment Summary =====")
     # Create a pandas DataFrame for easy viewing
     results_df = pd.DataFrame(results_summary)

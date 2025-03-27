@@ -1,0 +1,64 @@
+[
+    {
+        "run_id": "MLP_H_eq_Wave16_Relu_Seq14",
+        "model_type": "mlp",
+        "hidden_size": 46,
+        "activation_type": "relu",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+    },
+    {
+        "run_id": "MLP_H_eq_Wave16_Sin_Seq14",
+        "model_type": "mlp",
+        "hidden_size": 46,
+        "activation_type": "sin",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+    },
+     {
+        "run_id": "MLP_H_eq_Wave24_Relu_Seq14",
+        "model_type": "mlp",
+        "hidden_size": 69,
+        "activation_type": "relu",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+     },
+     {
+        "run_id": "MLP_H_eq_Wave24_Sin_Seq14",
+        "model_type": "mlp",
+        "hidden_size": 69,
+        "activation_type": "sin",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+     },
+     {
+        "run_id": "LSTM_H32_L1_Seq14",
+        "model_type": "lstm",
+        "hidden_size": 32,
+        "num_layers": 1,
+        "activation_type": "N/A",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+     },
+     {
+        "run_id": "GRU_H32_L1_Seq14",
+        "model_type": "gru",
+        "hidden_size": 32,
+        "num_layers": 1,
+        "activation_type": "N/A",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+     }
+]
