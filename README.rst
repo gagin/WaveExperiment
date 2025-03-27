@@ -4,7 +4,7 @@ Parametric Wave Layers vs MLP vs RNN: Parameter Efficiency Analysis
 
 :Author: Alex Gaggin
 :Date: March 28, 2024
-:Version: 1.3 (Uses descriptive naming, includes RNN baselines, highlights MLP+Sin)
+:Version: 1.4 (Uses list-tables and text math for GitHub RST)
 
 .. meta::
    :description: Comparison of a custom Network with WaveLayers against MLP and RNN baselines on MNIST and RSI prediction tasks, focusing on parameter efficiency and activation functions.
@@ -21,22 +21,22 @@ Introduction
 
 Standard feedforward neural networks typically rely on linear transformations followed by simple non-linear activation functions (e.g., ReLU). This project explores an alternative layer construction, termed "**WaveLayer**," inspired by wave function concepts, evaluating its performance and efficiency when used in a "**Network with WaveLayers**" against standard Multi-Layer Perceptron (MLP) and Recurrent Neural Network (RNN) baselines on MNIST classification and SPY RSI time-series prediction.
 
-The primary research question was whether the WaveLayer's richer per-connection function could yield greater parameter efficiency in a network structure. While investigating this, the study also uncovered significant insights into the effectiveness of using periodic activation functions (`sin`) within standard MLP architectures, particularly for time-series data.
+The primary research question was whether the WaveLayer's richer per-connection function could yield greater parameter efficiency. While investigating this, the study also uncovered significant insights into the effectiveness of using periodic activation functions (`sin`) within standard MLP architectures, particularly for time-series data.
 
 The WaveLayer Concept
 =====================
 
-The core idea of the **WaveLayer** is to replace the scalar weight ``W_ij`` with a parametric function incorporating trainable amplitude (``A_ij``), frequency (``ω_ij``), and phase (``φ_ij``):
+The core idea of the **WaveLayer** is to replace the scalar weight ``W_ij`` with a parametric function incorporating trainable amplitude (``A_ij``), frequency (``ω_ij``), and phase (``φ_ij``).
 
-.. math::
+The transformation applied to each input element ``x_i`` as it contributes to output neuron ``j`` is (LaTeX representation)::
 
    \text{contribution}_{ij} = A_{ij} \cdot \sin(\omega_{ij} \cdot x_i + \phi_{ij})
 
-The total pre-activation input to output neuron ``j`` is:
-
-.. math::
+The total pre-activation input to output neuron ``j`` is (LaTeX representation)::
 
    \text{output}_j = \sum_{i} [ A_{ij} \cdot \sin(\omega_{ij} \cdot x_i + \phi_{ij}) ] + B_j
+
+*(Note: GitHub's RST renderer does not process LaTeX math directives; the raw source is shown above).*
 
 A network constructed using these layers introduces non-linearity and periodicity *within* the layer transformation itself.
 
@@ -44,7 +44,7 @@ Methodology
 ===========
 
 1.  **Architectures:**
-    *   **Network with WaveLayers:** Two-layer network: ``Input -> WaveLayer(In, H) -> Activation -> WaveLayer(H, Out) -> Output``. Implemented using ``GenericWaveNet`` class name in ``models.py`` (could be renamed to reflect descriptive name if desired).
+    *   **Network with WaveLayers:** Two-layer network: ``Input -> WaveLayer(In, H) -> Activation -> WaveLayer(H, Out) -> Output``. Implemented using ``GenericWaveNet`` class name in ``models.py``.
     *   **MLP Baseline:** Two-layer ``GenericMLP`` (``models.py``).
     *   **RNN Baselines (RSI only):** ``LstmPredictor`` and ``GruPredictor`` (``models.py``).
 2.  **Activation Functions:** ``ReLU`` and ``sin`` tested between layers for the Network with WaveLayers and MLP.
@@ -69,17 +69,26 @@ Focus on parameter-matched comparison: Network with WaveLayers (H=24, ~57k param
 MNIST Results
 -------------
 
-.. table:: MNIST Parameter Efficiency Comparison
-   :widths: auto
-   :align: left
+.. list-table:: MNIST Parameter Efficiency Comparison
+   :widths: 30 15 10 20 25
+   :header-rows: 1
+   :stub-columns: 0
 
-   +------------------------------+------------+----------+---------------+-----------------------+
-   | Model Configuration          | Parameters | Epochs   | Test Accuracy | Approx. Train Time (s)|
-   +==============================+============+==========+===============+=======================+
-   | Network with WaveLayers H=24 |   57,202   |    12    |    93.54%     |     ~86s              |
-   +------------------------------+------------+----------+---------------+-----------------------+
-   | MLP H=72 (ReLU)              |   57,250   |    12    |  **95.85%**   |     **~40s**          |
-   +------------------------------+------------+----------+---------------+-----------------------+
+   * - Model Configuration
+     - Parameters
+     - Epochs
+     - Test Accuracy
+     - Approx. Train Time (s)
+   * - Network with WaveLayers H=24
+     - 57,202
+     - 12
+     - 93.54%
+     - ~86s
+   * - **MLP H=72 (ReLU)**
+     - 57,250
+     - 12
+     - **95.85%**
+     - **~40s**
 
 *(Note: A larger Network with WaveLayers (H=128, ~305k params) was required to reach ~95% accuracy).*
 
@@ -102,36 +111,90 @@ Methodology Additions
 RSI Results
 -----------
 
-.. table:: RSI Prediction Experiment Summary
-   :widths: auto
-   :align: left
+.. list-table:: RSI Prediction Experiment Summary
+   :widths: 28 12 5 12 10 12 15 15
+   :header-rows: 1
+   :stub-columns: 0
 
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | run_id                      | model_type | H  | activation | params | test_rmse | baseline_rmse | training_time_s |
-   +=============================+============+====+============+========+===========+===============+=================+
-   | **LSTM_H32_L1_Seq14**       | lstm       | 32 | N/A        |  4,513 | **4.5770**| 4.6425        | ~6.9s           |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | **MLP_H_eq_Wave24_Sin_Seq14** | mlp        | 69 | sin        |  1,105 | **4.5857**| 4.6425        | *(loaded)*      |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | *WaveLayerNet_H24_Seq14*    | *wave*     | *24*| *sin*      | *1,105*| *4.6074*  | *4.6425*      | *(loaded)*      |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | MLP_H_eq_Wave16_Sin_Seq14   | mlp        | 46 | sin        |    737 | 4.6207    | 4.6425        | *(loaded)*      |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | GRU_H32_L1_Seq14            | gru        | 32 | N/A        |  3,393 | 4.6298    | 4.6425        | ~6.2s           |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | *WaveLayerNet_H16_Seq14*    | *wave*     | *16*| *sin*      | *737*  | *4.6375*  | *4.6425*      | *(loaded)*      |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | MLP_H_eq_Wave24_Relu_Seq14  | mlp        | 69 | relu       |  1,105 | 4.6427    | 4.6425        | *(loaded)*      |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
-   | MLP_H_eq_Wave16_Relu_Seq14  | mlp        | 46 | relu       |    737 | 4.6880    | 4.6425        | *(loaded)*      |
-   +-----------------------------+------------+----+------------+--------+-----------+---------------+-----------------+
+   * - run_id
+     - model_type
+     - H
+     - activation
+     - params
+     - test_rmse
+     - baseline_rmse
+     - training_time_s
+   * - **LSTM_H32_L1_Seq14**
+     - lstm
+     - 32
+     - N/A
+     - 4,513
+     - **4.5770**
+     - 4.6425
+     - ~6.9s
+   * - **MLP_H_eq_Wave24_Sin_Seq14**
+     - mlp
+     - 69
+     - sin
+     - 1,105
+     - **4.5857**
+     - 4.6425
+     - *(loaded)*
+   * - *WaveLayerNet_H24_Seq14*
+     - *wave*
+     - *24*
+     - *sin*
+     - *1,105*
+     - *4.6074*
+     - 4.6425
+     - *(loaded)*
+   * - MLP_H_eq_Wave16_Sin_Seq14
+     - mlp
+     - 46
+     - sin
+     - 737
+     - 4.6207
+     - 4.6425
+     - *(loaded)*
+   * - GRU_H32_L1_Seq14
+     - gru
+     - 32
+     - N/A
+     - 3,393
+     - 4.6298
+     - 4.6425
+     - ~6.2s
+   * - *WaveLayerNet_H16_Seq14*
+     - *wave*
+     - *16*
+     - *sin*
+     - *737*
+     - *4.6375*
+     - 4.6425
+     - *(loaded)*
+   * - MLP_H_eq_Wave24_Relu_Seq14
+     - mlp
+     - 69
+     - relu
+     - 1,105
+     - 4.6427
+     - 4.6425
+     - *(loaded)*
+   * - MLP_H_eq_Wave16_Relu_Seq14
+     - mlp
+     - 46
+     - relu
+     - 737
+     - 4.6880
+     - 4.6425
+     - *(loaded)*
 
 *(Note: Baseline RMSE ~4.6425. 'wave' model_type refers to the Network with WaveLayers. Training time '(loaded)' indicates previous state loaded)*
 
 RSI Conclusion
 --------------
 1.  **Baselines:** LSTM achieved the best accuracy (RMSE 4.577). Persistence baseline (RMSE ~4.64) was challenging.
-2.  **MLP+Sin Strength:** The ``MLP`` using ``sin`` activation was highly effective, nearly matching LSTM accuracy (RMSE 4.586) with significantly fewer parameters and faster expected training.
+2.  **MLP+Sin Strength:** The ``MLP`` using ``sin`` activation was highly effective, nearly matching LSTM accuracy (RMSE 4.586) with significantly fewer parameters (~1.1k vs ~4.5k) and faster expected training time.
 3.  **WaveLayers vs MLP+Sin:** The Network with WaveLayers was consistently outperformed by MLP+Sin at equivalent parameter counts in accuracy.
 4.  **Parameter Efficiency:** The **``MLP+Sin`` architecture offered the best balance of accuracy and parameter efficiency**. LSTM was most accurate but least efficient. The Network with WaveLayers was less efficient than MLP+Sin.
 5.  **Activation:** ``sin`` activation was crucial for MLP performance on RSI, significantly outperforming ``ReLU``.
