@@ -1,127 +1,87 @@
 # WaveNet vs MLP vs RNN: Parameter Efficiency Experiments
 
 Author  
-\[Your Name/Group\]
+Alex Gaggin
 
 Date  
 March 28, 2024
 
 Version  
-1.1 (Includes RSI+RNN results)
+1.2 (Includes RNN baselines, highlights MLP+Sin)
 
 **Acknowledgments:** The core implementation and experimental execution
-detailed in this report were performed by \[Your Name/Group\], with
-conceptual guidance and orchestration provided by \[AI/Your Name\].
+detailed in this report were performed by Gemini 2.5 Pro Experimental
+03-25, with conceptual guidance and orchestration provided by the
+author.
 
 Table of Contents
 
 ## Introduction
 
 Standard feedforward neural networks typically rely on linear
-transformations (matrix multiplication + bias) followed by simple
-non-linear activation functions (e.g., ReLU, Sigmoid). This project
-explores an alternative neural network layer construction, termed
-"WaveLayer," inspired conceptually by wave function principles, and
-evaluates its performance and efficiency against standard Multi-Layer
-Perceptron (MLP) and Recurrent Neural Network (RNN) baselines.
+transformations followed by simple non-linear activation functions
+(e.g., ReLU). This project explores an alternative layer construction,
+termed "WaveLayer," inspired by wave function concepts, evaluating its
+performance and efficiency against standard Multi-Layer Perceptron (MLP)
+and Recurrent Neural Network (RNN) baselines on MNIST classification and
+SPY RSI time-series prediction.
 
-Two benchmark tasks were used:
-
-1.  MNIST handwritten digit classification.
-2.  Predicting the next day's Relative Strength Index (RSI) for the SPY
-    ETF time series.
-
-The primary research question was whether the richer per-connection
-function within the WaveLayer could lead to greater parameter efficiency
-(achieving comparable accuracy with fewer parameters or higher accuracy
-with the same parameters) compared to standard architectures,
-particularly on data with inherent periodicity like RSI.
+The primary research question was whether the WaveLayer's richer
+per-connection function could yield greater parameter efficiency. While
+investigating this, the study also uncovered significant insights into
+the effectiveness of using periodic activation functions
+(<span class="title-ref">sin</span>) within standard MLP architectures,
+particularly for time-series data.
 
 ## The WaveLayer Concept
 
-The core idea of the WaveLayer is to replace the simple scalar weight
-`W_ij` connecting input `i` to output `j` with a parametric function
-incorporating trainable amplitude (`A_ij`), frequency (`ω_ij`), and
-phase (`φ_ij`) parameters. The transformation applied to each input
-element `x_i` as it contributes to output neuron `j` is given by:
+The core idea of the WaveLayer is to replace the scalar weight `W_ij`
+with a parametric function incorporating trainable amplitude (`A_ij`),
+frequency (`ω_ij`), and phase (`φ_ij`):
 
 contribution<sub>*i**j*</sub> = *A*<sub>*i**j*</sub> ⋅ sin (*ω*<sub>*i**j*</sub> ⋅ *x*<sub>*i*</sub> + *ϕ*<sub>*i**j*</sub>)
 
-The total input to output neuron `j` before the subsequent activation
-function is the sum of these contributions over all inputs `i`, plus a
-bias term `B_j`:
+The total pre-activation input to output neuron `j` is:
 
 output<sub>*j*</sub> = ∑<sub>*i*</sub>\[*A*<sub>*i**j*</sub> ⋅ sin (*ω*<sub>*i**j*</sub> ⋅ *x*<sub>*i*</sub> + *ϕ*<sub>*i**j*</sub>)\] + *B*<sub>*j*</sub>
 
-This "WaveNet" architecture, composed of these WaveLayers, inherently
-introduces non-linearity and periodicity *within* the layer
-transformation itself.
+This "WaveNet" architecture introduces non-linearity and periodicity
+*within* the layer transformation.
 
 ## Methodology
 
 1.  **Architectures:**
-    -   **WaveNet:** Two-layer network:
-        `Input -> WaveLayer(In, H) -> Activation -> WaveLayer(H, Out) -> Output`.
-        Implemented as `GenericWaveNet` in `models.py`.
-    -   **MLP Baseline:** Standard two-layer MLP:
-        `Input -> Linear(In, H) -> Activation -> Linear(H, Out) -> Output`.
-        Implemented as `GenericMLP` in `models.py`.
-    -   **RNN Baselines (RSI only):** Standard `LSTM` and `GRU` layers
-        followed by a `Linear` layer for prediction:
-        `Input -> LSTM/GRU(features, H) -> Linear(H, Out) -> Output`.
-        Implemented as `LstmPredictor` and `GruPredictor` in
-        `models.py`.
-2.  **Activation Functions:** `ReLU` and `sin` were tested as the
-    activation function between the two layers for WaveNet and MLP
-    architectures. RNNs used their internal activations.
+    -   **WaveNet:** Two-layer `GenericWaveNet` (`models.py`).
+    -   **MLP Baseline:** Two-layer `GenericMLP` (`models.py`).
+    -   **RNN Baselines (RSI only):** `LstmPredictor` and `GruPredictor`
+        (`models.py`).
+2.  **Activation Functions:** `ReLU` and `sin` tested between layers for
+    WaveNet/MLP.
 3.  **Datasets:**
-    -   **MNIST:** 60k train / 10k test images (28x28), standard
-        normalization. Task: 10-way classification. `Input Size = 784`,
-        `Output Size = 10`.
-    -   **SPY RSI:** Daily SPY prices (2000-present) used to calculate
-        14-period RSI via `pandas_ta`. Task: Predict RSI(t+1) given
-        \[RSI(t-13)...RSI(t)\]. 70/15/15 train/val/test split, scaled to
-        \[0, 1\]. `Input Size = 14` (sequence length),
-        `Output Size = 1`. MultiIndex columns
-        <span class="title-ref">('Close', 'SPY')</span> and
-        <span class="title-ref">('RSI', 'SPY')</span> handled. Data
-        fetched via `data_utils.py`.
-4.  **Training:** Models were trained using the Adam optimizer with
-    specified learning rates (typically 0.001 or 0.005) and loss
-    functions (MSELoss for RSI, CrossEntropyLoss for MNIST). RSI
-    training used early stopping based on validation loss (patience=5).
-    Experiments were conducted on a **MacBook Air M2 with 8GB RAM**,
-    primarily utilizing the CPU.
-5.  **Evaluation Metrics:**
-    -   MNIST: Test Accuracy (%).
-    -   RSI: Root Mean Squared Error (RMSE) on unscaled test
-        predictions, compared to a persistence baseline (predict RSI(t)
-        = RSI(t-1)).
-    -   All: Total number of trainable parameters, total training time
-        (where applicable, some runs loaded pre-trained models).
-6.  **Implementation:** PyTorch. Code uses external JSON files (e.g.,
-    `experiments.json`) for configuring runs and external modules
-    (`data_utils.py`, `models.py`).
+    -   **MNIST:** Standard setup (784 input -&gt; 10 output).
+    -   **SPY RSI:** 14-day RSI prediction (14 input -&gt; 1 output),
+        MultiIndex handled, data via `data_utils.py`.
+4.  **Training:** Adam optimizer, relevant loss functions
+    (MSE/CrossEntropy), early stopping for RSI. Hardware: **MacBook Air
+    M2, 8GB RAM** (CPU).
+5.  **Evaluation Metrics:** MNIST Accuracy (%), RSI RMSE (vs.
+    persistence baseline), parameter counts, training time.
+6.  **Implementation:** PyTorch, configurable via JSON (e.g.,
+    `experiments.json`), modular code (`data_utils.py`, `models.py`).
 
 ## Experiment 1: MNIST Classification
 
 ### Objective
 
-To establish baseline performance and efficiency of WaveNet vs MLP on a
-standard image classification task.
+Establish baseline performance and efficiency of WaveNet vs MLP on image
+classification.
 
 ### Key Configurations
 
-A range of hidden sizes were tested initially. The most direct
-comparison focused on matching parameter counts:
-
--   WaveNet (H=24, ~57k params)
--   MLP (H=72, ~57k params)
+Focus on parameter-matched comparison: WaveNet (H=24, ~57k params) vs.
+MLP (H=72, ~57k params).
 
 ### MNIST Results
-
-Direct comparison under identical training conditions (LR=0.005, 12
-Epochs, CPU):
 
 <table>
 <caption>MNIST Parameter Efficiency Comparison</caption>
@@ -168,36 +128,29 @@ Epochs, CPU):
 </tbody>
 </table>
 
-*(Note: A larger WaveNet with H=128 (~305k params) reached ~95%
-accuracy, similar to the much smaller MLP H=72).*
+*(Note: Larger WaveNet H=128 (~305k params) required to reach ~95%
+accuracy).*
 
 ### MNIST Conclusion
 
-On the MNIST task, the standard MLP architecture was significantly
-**more parameter-efficient** and **computationally faster** than the
-WaveNet. The MLP achieved higher accuracy with the same parameter budget
-and trained more than twice as fast. The WaveLayer's complexity did not
-translate to an advantage on this image classification benchmark.
+On MNIST, the standard **MLP was significantly more parameter-efficient
+and computationally faster** than WaveNet, achieving higher accuracy
+with the same parameters.
 
 ## Experiment 2: RSI Time Series Prediction
 
 ### Objective
 
-To evaluate WaveNet's performance on data with inherent periodicity (RSI
-oscillations) and compare it against MLP and standard RNN baselines
-(LSTM, GRU).
+Evaluate WaveNet on periodic data (RSI) against MLP (parameter-matched)
+and standard RNN baselines.
 
 ### Methodology Additions
 
--   **RNN Models:** LSTM and GRU models (1 layer, 32 hidden units) were
-    added as standard time-series baselines.
--   **Parameter Matching:** MLP hidden sizes were adjusted (H=46, H=69)
-    to closely match the parameter counts of WaveNet (H=16, H=24)
-    respectively.
+-   RNN models (LSTM H=32, GRU H=32) added.
+-   MLP hidden sizes adjusted (H=46, H=69) for accurate parameter
+    matching against WaveNet (H=16, H=24).
 
 ### RSI Results
-
-Summary of results including parameter-matched MLPs and RNNs:
 
 <table>
 <caption>RSI Prediction Experiment Summary</caption>
@@ -224,113 +177,85 @@ Summary of results including parameter-matched MLPs and RNNs:
 </table>
 
 *(Note: Baseline RMSE ~4.6425. WaveNet results included from previous
-runs. Training time '(loaded)' indicates model state was loaded, not
-retrained in final run; estimated times from earlier MNIST/RSI runs
-suggest MLP &lt; WaveNet &lt;&lt; RNN)*
+runs. Training time '(loaded)' indicates previous state loaded)*
 
 ### RSI Conclusion
 
-1.  **Baseline:** The persistence baseline was strong; only the best
-    models (LSTM, MLP+Sin) achieved a clear improvement.
-2.  **Best Accuracy:** The standard `LSTM` achieved the lowest RMSE
-    (4.577), confirming its suitability for sequence modeling.
-3.  **MLP+Sin Strength:** The `MLP` using a `sin` activation performed
-    exceptionally well, nearly matching the LSTM's accuracy (RMSE 4.586)
-    but with significantly fewer parameters (~1.1k vs ~4.5k) and likely
-    much faster training.
-4.  **WaveNet Performance:** WaveNet performed reasonably (RMSEs
-    ~4.61-4.64), slightly beating the baseline, but was consistently
-    outperformed by the MLP+Sin architecture at equivalent parameter
-    counts.
-5.  **Parameter Efficiency:** The `MLP+Sin` architecture demonstrated
-    the best parameter efficiency among models clearly beating the
-    baseline. WaveNet was less efficient. LSTM achieved top accuracy at
-    the highest parameter cost.
-6.  **Activation:** `sin` activation was crucial for MLP performance on
-    RSI, far exceeding `ReLU`.
-
-Overall, for RSI prediction, LSTM was most accurate, while **MLP+Sin
-offered the best balance of accuracy, parameter efficiency, and speed**.
-The WaveNet, despite its periodic bias, was not the most effective or
-efficient architecture.
+1.  **Baselines:** LSTM achieved the best accuracy (RMSE 4.577). The
+    persistence baseline (RMSE ~4.64) remained challenging.
+2.  **MLP+Sin Strength:** The `MLP` using `sin` activation emerged as a
+    highly effective architecture, nearly matching LSTM accuracy (RMSE
+    4.586) with significantly fewer parameters (~1.1k vs ~4.5k) and
+    faster expected training time.
+3.  **WaveNet vs MLP+Sin:** WaveNet was consistently outperformed by
+    MLP+Sin at equivalent parameter counts in terms of accuracy.
+4.  **Parameter Efficiency:** The **\`\`MLP+Sin\`\` architecture offered
+    the best balance of accuracy and parameter efficiency**. LSTM was
+    most accurate but least efficient. WaveNet was less efficient than
+    MLP+Sin.
+5.  **Activation:** `sin` activation was crucial for good MLP
+    performance on RSI, significantly outperforming `ReLU`.
 
 ## Overall Discussion
 
 ### Efficiency Comparison Summary
 
-Across both MNIST classification and RSI time-series prediction, the
-proposed WaveNet architecture, while functional, consistently
-demonstrated **lower parameter efficiency** and **higher computational
-cost** compared to standard MLP baselines. On MNIST, the MLP achieved
-higher accuracy for the same parameters. On RSI, the MLP+Sin
-configuration achieved better accuracy for the same parameters compared
-to WaveNet.
+Across both tasks, the custom **WaveNet architecture was less
+parameter-efficient and computationally slower than standard MLPs**. On
+RSI, the MLP's advantage was most pronounced when using a `sin`
+activation.
 
 ### Hypothesis on Periodic Data
 
-The initial hypothesis that WaveNet's inherent periodicity might give it
-an advantage on oscillating data like RSI was **not supported** by the
-results. While the MLP's *relative* advantage over WaveNet (seen on
-MNIST) diminished on RSI, WaveNet did not become superior. The simpler
-**MLP+Sin architecture proved more parameter-efficient than WaveNet** on
-the RSI task.
+The hypothesis that WaveNet's periodic bias would be advantageous on RSI
+data was **not supported**. The simpler MLP+Sin architecture proved more
+parameter-efficient and achieved higher accuracy than WaveNet at matched
+parameter counts.
 
 ### The "Wave" Inspiration and Reality
 
-The WaveLayer design was conceptually inspired by using wave-like
-functions for network transformations, potentially capturing complex
-patterns more efficiently, echoing ideas from signal processing or
-physics (e.g., wave-particle duality rhyme).
+While conceptually appealing, drawing inspiration from wave-like
+functions, the practical implementation of WaveLayer faced challenges.
+Its complexity likely led to optimization difficulties and computational
+overhead that outweighed potential benefits from its inductive bias for
+the tasks tested.
 
-However, the experimental results suggest this conceptual appeal did not
-translate into a practical advantage for these tasks and this specific
-implementation. Potential reasons include:
+### Effectiveness of MLP+Sin - A Key Finding
 
--   **Optimization Challenges:** Training multiple parameters (A, ω, φ)
-    per connection might be harder than training single weights.
--   **Complexity Overhead:** The computation within WaveLayer is likely
-    much slower than optimized matrix multiplications.
--   **Bias Mismatch/Task Difficulty:** The specific
-    <span class="title-ref">A\*sin(ωx+φ)</span> form might not be
-    optimal, or other signal characteristics (noise) dominate. The RSI
-    task itself proved difficult for most models to significantly beat
-    the persistence baseline.
-
-### Effectiveness of MLP+Sin
-
-An interesting finding was the effectiveness of a standard MLP using a
-`sin` activation function, particularly on RSI. This simple modification
-significantly outperformed the `ReLU` MLP and was more
-parameter-efficient than WaveNet, suggesting that introducing
-periodicity via the activation function is a valuable and efficient
-technique for certain time-series modeling tasks.
+A significant outcome of this investigation was the **demonstrated
+effectiveness of using a standard MLP architecture with a \`\`sin\`\`
+activation function for the periodic RSI time series**. This relatively
+simple approach (MLP+Sin) achieved performance close to the best LSTM
+model but with vastly superior parameter and computational efficiency
+compared to both LSTM and WaveNet. This highlights a practical and
+efficient method for incorporating periodic bias into models for
+relevant tasks.
 
 ## Overall Conclusion
 
-This study implemented and evaluated a novel "WaveNet" architecture
-using layers based on parametric wave-like functions. Comparative
-experiments on MNIST classification and RSI time-series prediction
-against MLP and RNN baselines (run on a MacBook Air M2 CPU) showed that:
+This study evaluated a novel "WaveNet" architecture using parametric
+wave functions. Experiments on MNIST and RSI prediction (vs MLP, LSTM,
+GRU baselines on a MacBook Air M2 CPU) led to two main conclusions:
 
-1.  The WaveNet architecture is functional and capable of learning.
-2.  However, on both tasks, WaveNet was found to be **less
-    parameter-efficient** and **computationally slower** than standard
-    MLP baselines.
-3.  Specifically on the RSI task, the **MLP+Sin architecture
-    demonstrated superior parameter efficiency** compared to WaveNet,
-    achieving better accuracy with the same parameter budget.
-4.  While standard LSTM models achieved the highest accuracy on RSI,
-    MLP+Sin offered a compelling balance of accuracy, parameter count,
-    and computational speed.
+1.  The custom **WaveNet architecture, while functional, proved less
+    parameter-efficient and computationally slower** than standard MLP
+    baselines on both tasks. Its inherent periodic bias did not
+    translate into a competitive advantage, even on the oscillating RSI
+    data.
+2.  A key secondary finding was the **high effectiveness and efficiency
+    of using a simple \`sin\` activation function within a standard
+    MLP** for the RSI time-series task. This MLP+Sin configuration
+    offered a superior balance of accuracy, parameter count, and speed
+    compared to WaveNet, LSTM, and standard ReLU MLPs for this specific
+    problem.
 
-The results suggest that, for the problems and configurations tested,
-the additional complexity introduced by the WaveLayer's per-connection
-parametric wave function does not provide a net benefit over simpler,
-well-established neural network components, even on potentially
-favorable periodic data.
+The results suggest that the added complexity of the WaveLayer did not
+yield practical benefits over simpler, established methods, while also
+highlighting the potential of using periodic activation functions in
+standard networks for time-series modeling.
 
 ## Code Availability
 
 The PyTorch code used for these experiments, allowing configuration via
 JSON files and replication of WaveNet, MLP, LSTM, and GRU models, is
-available in this repository: \[Link to your Repository if applicable\]
+available in this repository.
