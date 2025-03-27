@@ -1,8 +1,6 @@
 # WaveNet vs MLP: Parameter Efficiency on MNIST Classification
 
-::: {.contents local="" depth="2"}
 Table of Contents
-:::
 
 ## Introduction
 
@@ -10,7 +8,7 @@ Standard feedforward neural networks typically rely on linear
 transformations (matrix multiplication plus bias) followed by simple
 non-linear activation functions (e.g., ReLU, Sigmoid). This project
 explores an alternative neural network layer construction, termed
-\"WaveLayer,\" inspired by wave function concepts, and evaluates its
+"WaveLayer," inspired by wave function concepts, and evaluates its
 performance and efficiency against a standard Multi-Layer Perceptron
 (MLP) baseline on the MNIST handwritten digit classification task.
 
@@ -20,15 +18,15 @@ incorporating trainable amplitude (`A_ij`), frequency (`ω_ij`), and
 phase (`φ_ij`) parameters. The transformation applied to each input
 element `x_i` as it contributes to output neuron `j` is given by:
 
-$$\text{contribution}_{ij} = A_{ij} \cdot \sin(\omega_{ij} \cdot x_i + \phi_{ij})$$
+contribution<sub>*i**j*</sub> = *A*<sub>*i**j*</sub> ⋅ sin (*ω*<sub>*i**j*</sub> ⋅ *x*<sub>*i*</sub> + *ϕ*<sub>*i**j*</sub>)
 
 The total input to output neuron `j` before the subsequent activation
 function is the sum of these contributions over all inputs `i`, plus a
 bias term `B_j`:
 
-$$\text{output}_j = \sum_{i} [ A_{ij} \cdot \sin(\omega_{ij} \cdot x_i + \phi_{ij}) ] + B_j$$
+output<sub>*j*</sub> = ∑<sub>*i*</sub>\[*A*<sub>*i**j*</sub> ⋅ sin (*ω*<sub>*i**j*</sub> ⋅ *x*<sub>*i*</sub> + *ϕ*<sub>*i**j*</sub>)\] + *B*<sub>*j*</sub>
 
-This \"WaveNet\" architecture, composed of these WaveLayers, inherently
+This "WaveNet" architecture, composed of these WaveLayers, inherently
 introduces non-linearity and periodicity *within* the layer
 transformation itself. The primary research question was whether this
 richer per-connection function could lead to greater parameter
@@ -67,49 +65,93 @@ rate, and training epochs.
 
 1.  **WaveNet Viability:** Initial tests confirmed that the WaveNet
     architecture *can* learn the MNIST task, with larger models (e.g.,
-    H=128) achieving competitive accuracy (\~95%).
+    H=128) achieving competitive accuracy (~95%).
 
 2.  **Parameter Reduction in WaveNet:** The hidden size (H) for WaveNet
     was reduced to investigate parameter efficiency:
 
-    -   [H=24]{.title-ref} (\~57k parameters) emerged as a point of
-        interest, achieving **\~94.2%** test accuracy after 15 epochs
-        (using [sin]{.title-ref} activation and LR=0.005).
-    -   Further reductions ([H=16]{.title-ref} \~38k params,
-        [H=8]{.title-ref} \~19k params) led to significant drops in
-        accuracy (to \~91.8% and \~88.7% respectively), suggesting a
-        lower limit for representational capacity.
+    -   <span class="title-ref">H=24</span> (~57k parameters) emerged as
+        a point of interest, achieving **~94.2%** test accuracy after 15
+        epochs (using <span class="title-ref">sin</span> activation and
+        LR=0.005).
+    -   Further reductions (<span class="title-ref">H=16</span> ~38k
+        params, <span class="title-ref">H=8</span> ~19k params) led to
+        significant drops in accuracy (to ~91.8% and ~88.7%
+        respectively), suggesting a lower limit for representational
+        capacity.
 
 3.  **Activation Function Impact (WaveNet H=24):**
 
-    -   Using [sin]{.title-ref} activation between WaveLayers resulted
-        in faster initial convergence compared to [ReLU]{.title-ref}
-        (93.8% after 3 epochs vs. \~91.8% for ReLU after 5 epochs).
+    -   Using <span class="title-ref">sin</span> activation between
+        WaveLayers resulted in faster initial convergence compared to
+        <span class="title-ref">ReLU</span> (93.8% after 3 epochs vs.
+        ~91.8% for ReLU after 5 epochs).
     -   However, after sufficient training (15 epochs), both
-        [sin]{.title-ref} and [ReLU]{.title-ref} versions converged to
-        the **same peak accuracy of \~94.2%**.
+        <span class="title-ref">sin</span> and
+        <span class="title-ref">ReLU</span> versions converged to the
+        **same peak accuracy of ~94.2%**.
 
 4.  **Direct Baseline Comparison (Matched Parameters & Training):** The
-    most critical comparison was between WaveNet (H=24, \~57k params)
-    and MLP (H=72, \~57k params), trained under identical conditions
+    most critical comparison was between WaveNet (H=24, ~57k params) and
+    MLP (H=72, ~57k params), trained under identical conditions
     (LR=0.005, 12 Epochs):
 
-    +--------------------+---------+---------+-------------+-----------+
-    | Model              | Par     | Epochs  | Test        | Train     |
-    | Configuration      | ameters |         | Accuracy    | Time (s)  |
-    +====================+=========+=========+=============+===========+
-    | WaveNet (H=24,     | >       | > 12    | > 93.54%    | > \~86s   |
-    | sin)               |  57,202 |         |             |           |
-    +--------------------+---------+---------+-------------+-----------+
-    | MLP (H=72, ReLU)   | >       | > 12    | >           | >         |
-    |                    |  57,250 |         |  **95.85%** | **\~40s** |
-    +--------------------+---------+---------+-------------+-----------+
+    <table style="width:97%;">
+    <colgroup>
+    <col style="width: 29%" />
+    <col style="width: 14%" />
+    <col style="width: 14%" />
+    <col style="width: 20%" />
+    <col style="width: 17%" />
+    </colgroup>
+    <thead>
+    <tr>
+    <th>Model Configuration</th>
+    <th>Parameters</th>
+    <th>Epochs</th>
+    <th>Test Accuracy</th>
+    <th>Train Time (s)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>WaveNet (H=24, sin)</td>
+    <td><blockquote>
+    <p>57,202</p>
+    </blockquote></td>
+    <td><blockquote>
+    <p>12</p>
+    </blockquote></td>
+    <td><blockquote>
+    <p>93.54%</p>
+    </blockquote></td>
+    <td><blockquote>
+    <p>~86s</p>
+    </blockquote></td>
+    </tr>
+    <tr>
+    <td>MLP (H=72, ReLU)</td>
+    <td><blockquote>
+    <p>57,250</p>
+    </blockquote></td>
+    <td><blockquote>
+    <p>12</p>
+    </blockquote></td>
+    <td><blockquote>
+    <p><strong>95.85%</strong></p>
+    </blockquote></td>
+    <td><blockquote>
+    <p><strong>~40s</strong></p>
+    </blockquote></td>
+    </tr>
+    </tbody>
+    </table>
 
     -   The standard MLP achieved significantly **higher accuracy**
-        (\>2.3 points) with the same parameter budget.
+        (&gt;2.3 points) with the same parameter budget.
     -   The standard MLP trained **more than twice as fast** due to the
-        computational efficiency of linear layers versus the
-        WaveLayer\'s complex operations.
+        computational efficiency of linear layers versus the WaveLayer's
+        complex operations.
 
 5.  **Optimization Challenges:** Attempts to improve WaveNet performance
     by increasing hidden size (e.g., H=32) or extending training time
@@ -125,15 +167,16 @@ offer clear advantages over standard MLP architectures for the MNIST
 task in terms of parameter efficiency or computational speed on
 conventional hardware.
 
--   **Efficiency:** At matched parameter counts (\~57k), the standard
-    MLP achieved higher accuracy. The WaveNet required significantly
-    more parameters (H=128, \~305k) to reach similar (\>95%) accuracy
-    levels as moderately sized MLPs.
--   **Computational Cost:** The calculation involving [sin]{.title-ref}
-    and multiple parameter interactions per connection within the
-    WaveLayer incurs substantial computational overhead, leading to
-    significantly longer training times compared to highly optimized
-    matrix multiplications in linear layers.
+-   **Efficiency:** At matched parameter counts (~57k), the standard MLP
+    achieved higher accuracy. The WaveNet required significantly more
+    parameters (H=128, ~305k) to reach similar (&gt;95%) accuracy levels
+    as moderately sized MLPs.
+-   **Computational Cost:** The calculation involving
+    <span class="title-ref">sin</span> and multiple parameter
+    interactions per connection within the WaveLayer incurs substantial
+    computational overhead, leading to significantly longer training
+    times compared to highly optimized matrix multiplications in linear
+    layers.
 -   **Potential Niche:** The inductive bias towards periodic functions
     introduced by the WaveLayer might be beneficial for datasets with
     strong inherent periodicity (e.g., signal processing, time series
@@ -142,17 +185,17 @@ conventional hardware.
 
 ## Conclusion
 
-This study implemented and evaluated a novel \"WaveNet\" architecture
+This study implemented and evaluated a novel "WaveNet" architecture
 using layers based on parametric wave-like functions for MNIST digit
 classification. While demonstrating the viability of such custom layers,
 the results indicate that, for this benchmark task and on standard CPU
 hardware, the WaveNet is less parameter-efficient and computationally
 slower than a standard MLP baseline achieving comparable or superior
-accuracy. The H=24 WaveNet configuration (\~57k parameters) reached a
-peak accuracy of \~94.2%, falling short of an equivalently sized MLP
-baseline (\~95.9%). Future work could explore the WaveNet\'s
-applicability to datasets with stronger periodic characteristics or
-investigate performance on specialized hardware architectures.
+accuracy. The H=24 WaveNet configuration (~57k parameters) reached a
+peak accuracy of ~94.2%, falling short of an equivalently sized MLP
+baseline (~95.9%). Future work could explore the WaveNet's applicability
+to datasets with stronger periodic characteristics or investigate
+performance on specialized hardware architectures.
 
 ## Code Availability
 
