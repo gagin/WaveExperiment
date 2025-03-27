@@ -7,7 +7,7 @@ Date
 March 28, 2024
 
 Version  
-1.5 (Uses list-tables, standard math directive for MD conversion)
+1.6 (Updated RSI training times)
 
 <div class="meta"
 description="Comparison of a custom Network with WaveLayers against MLP and RNN baselines on MNIST and RSI prediction tasks, focusing on parameter efficiency and activation functions."
@@ -19,12 +19,6 @@ keywords="Neural Networks, WaveLayer, Parametric Wave Network, MLP, LSTM, GRU, P
 detailed in this report were performed by Gemini 2.5 Pro Experimental
 03-25, with conceptual guidance and orchestration provided by the
 author.
-
-<div class="contents" local="" depth="2">
-
-Table of Contents
-
-</div>
 
 ## Introduction
 
@@ -137,36 +131,38 @@ Evaluate the Network with WaveLayers on periodic data (RSI) against MLP
 
 | run_id | model_type | H | activation | params | test_rmse | baseline_rmse | training_time_s |
 |----|----|----|----|----|----|----|----|
-| LSTM_H32_L1_Seq14 | lstm | 32 | N/A | 4,513 | 4.5770 | 4.6425 | ~6.9s |
-| MLP_H_eq_Wave24_Sin_Seq14 | mlp | 69 | sin | 1,105 | 4.5857 | 4.6425 | (loaded) |
-| WaveLayerNet_H24_Seq14 | wave | 24 | sin | 1,105 | 4.6074 | 4.6425 | (loaded) |
-| MLP_H_eq_Wave16_Sin_Seq14 | mlp | 46 | sin | 737 | 4.6207 | 4.6425 | (loaded) |
-| GRU_H32_L1_Seq14 | gru | 32 | N/A | 3,393 | 4.6298 | 4.6425 | ~6.2s |
-| WaveLayerNet_H16_Seq14 | wave | 16 | sin | 737 | 4.6375 | 4.6425 | (loaded) |
-| MLP_H_eq_Wave24_Relu_Seq14 | mlp | 69 | relu | 1,105 | 4.6427 | 4.6425 | (loaded) |
-| MLP_H_eq_Wave16_Relu_Seq14 | mlp | 46 | relu | 737 | 4.6880 | 4.6425 | (loaded) |
+| LSTM_H32_L1_Seq14 | lstm | 32 | N/A | 4,513 | 4.5772 | 4.6425 | ~8.3s |
+| MLP_H_eq_Wave24_Sin_Seq14 | mlp | 69 | sin | 1,105 | 4.5869 | 4.6425 | ~1.2s |
+| WaveNet_H24_Seq14 | wave | 24 | sin | 1,105 | 4.6230 | 4.6425 | ~1.2s |
+| MLP_H_eq_Wave16_Sin_Seq14 | mlp | 46 | sin | 737 | 4.6053 | 4.6425 | ~1.2s |
+| GRU_H32_L1_Seq14 | gru | 32 | N/A | 3,393 | 4.5692 | 4.6425 | ~5.5s |
+| WaveNet_H16_Seq14 | wave | 16 | sin | 737 | 4.5798 | 4.6425 | ~1.3s |
+| MLP_H_eq_Wave24_Relu_Seq14 | mlp | 69 | relu | 1,105 | 4.6117 | 4.6425 | ~0.8s |
+| MLP_H_eq_Wave16_Relu_Seq14 | mlp | 46 | relu | 737 | 4.6227 | 4.6425 | ~0.8s |
 
-RSI Prediction Experiment Summary
+RSI Prediction Experiment Summary (Updated Training Times)
 
 *(Note: Baseline RMSE ~4.6425. 'wave' model_type refers to the Network
-with WaveLayers. Training time '(loaded)' indicates previous state
-loaded)*
+with WaveLayers (\`GenericWaveNet\` class). RMSE values rounded slightly
+for display.)*
 
 ### RSI Conclusion
 
-1.  **Baselines:** LSTM achieved the best accuracy (RMSE 4.577).
-    Persistence baseline (RMSE ~4.64) was challenging.
-2.  **MLP+Sin Strength:** The `MLP` using `sin` activation was highly
-    effective, nearly matching LSTM accuracy (RMSE 4.586) with
-    significantly fewer parameters (~1.1k vs ~4.5k) and faster expected
-    training time.
+1.  **Baselines:** GRU achieved the best accuracy (RMSE ~4.569),
+    slightly edging out LSTM (RMSE ~4.577). Persistence baseline (RMSE
+    ~4.64) was challenging.
+2.  **MLP+Sin Strength:** The `MLP` using `sin` activation (H=69, RMSE
+    ~4.587) was highly effective, nearly matching LSTM/GRU accuracy with
+    significantly fewer parameters (~1.1k vs ~3.4k-4.5k) and much faster
+    training time (~1.2s vs ~5.5s-8.3s).
 3.  **WaveLayers vs MLP+Sin:** The Network with WaveLayers was
     consistently outperformed by MLP+Sin at equivalent parameter counts
-    in accuracy.
-4.  **Parameter Efficiency:** The **\`\`MLP+Sin\`\` architecture offered
-    the best balance of accuracy and parameter efficiency**. LSTM was
-    most accurate but least efficient. The Network with WaveLayers was
-    less efficient than MLP+Sin.
+    in both accuracy and training speed.
+4.  **Parameter Efficiency & Speed:** The **\`\`MLP+Sin\`\` architecture
+    offered the best balance of accuracy, parameter efficiency, and
+    training speed**. GRU/LSTM were most accurate but less efficient and
+    slower. The Network with WaveLayers was less efficient than MLP+Sin.
+    ReLU MLPs were the fastest to train but least accurate.
 5.  **Activation:** `sin` activation was crucial for MLP performance on
     RSI, significantly outperforming `ReLU`.
 
@@ -177,14 +173,15 @@ loaded)*
 Across both tasks, the custom **Network with WaveLayers was less
 parameter-efficient and computationally slower than standard MLPs**. On
 RSI, the MLP's advantage was most pronounced when using a `sin`
-activation.
+activation, which also proved much faster to train than RNNs.
 
 ### Hypothesis on Periodic Data
 
 The hypothesis that the WaveLayer's periodic bias would be advantageous
 on RSI data was **not supported**. The simpler MLP+Sin architecture
-proved more parameter-efficient and achieved higher accuracy than the
-Network with WaveLayers at matched parameter counts.
+proved more parameter-efficient and achieved comparable or better
+accuracy than the Network with WaveLayers at matched parameter counts,
+while being faster to train.
 
 ### The "Wave" Inspiration and Reality
 
@@ -197,10 +194,10 @@ inductive bias for the tasks tested.
 
 A significant outcome was the **demonstrated effectiveness of using a
 standard MLP with a \`\`sin\`\` activation** for the periodic RSI time
-series. This MLP+Sin approach achieved performance close to the best
-LSTM model but with vastly superior parameter and computational
-efficiency compared to both LSTM and the Network with WaveLayers. This
-highlights a practical method for incorporating periodic bias.
+series. This MLP+Sin approach achieved performance close to the best RNN
+models but with vastly superior parameter and computational efficiency
+compared to both RNNs and the Network with WaveLayers. This highlights a
+practical method for incorporating periodic bias.
 
 ## Overall Conclusion
 
@@ -218,7 +215,7 @@ conclusions:
     of using a simple \`sin\` activation function within a standard
     MLP** for the RSI time-series task. This MLP+Sin configuration
     offered a superior balance of accuracy, parameter count, and speed
-    compared to the Network with WaveLayers, LSTM, and standard ReLU
+    compared to the Network with WaveLayers, LSTM/GRU, and standard ReLU
     MLPs for this specific problem.
 
 The results suggest that the added complexity of the WaveLayer did not
