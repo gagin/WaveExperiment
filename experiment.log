@@ -1,0 +1,200 @@
+Loaded 6 experiment configurations from: experiment.json
+--- fetch_data for SPY [2000-01-01 to 2025-03-27] ---
+Cache hit: Found cache file: data_cache/SPY_2000-01-01_2025-03-27.csv
+Error loading data from cache file data_cache/SPY_2000-01-01_2025-03-27.csv: 'Date' is not in list. Will re-download.
+Cache miss or invalid cache. Downloading from yfinance...
+YF.download() has changed argument auto_adjust default to True
+Downloaded 6346 rows successfully.
+Saved data to cache: data_cache/SPY_2000-01-01_2025-03-27.csv
+
+DEBUG: Inspecting DataFrame structure before NaN check...
+DEBUG: DataFrame type: <class 'pandas.core.frame.DataFrame'>
+DEBUG: DataFrame shape: (6346, 5)
+DEBUG: DataFrame columns: [('Close', 'SPY'), ('High', 'SPY'), ('Low', 'SPY'), ('Open', 'SPY'), ('Volume', 'SPY')]
+DEBUG: DataFrame head:
+ Price           Close       High        Low       Open    Volume
+Ticker            SPY        SPY        SPY        SPY       SPY
+Date                                                            
+2000-01-03  92.414917  94.202055  91.422062  94.202055   8164300
+2000-01-04  88.800919  91.541197  88.731419  91.203627   8089800
+2000-01-05  88.959785  89.932783  87.212361  88.920071  12177900
+2000-01-06  87.530060  89.912911  87.530060  88.721485   6227200
+2000-01-07  92.613449  92.613449  88.999459  89.158316   8066500
+------------------------------------------------------
+
+Checking for NaNs in 'Close' column...
+DEBUG: Accessing df[('Close', 'SPY')] for NaN check...
+DEBUG: Type of close_col_for_nan: <class 'pandas.core.series.Series'>
+DEBUG: Calling .isnull() on close_col_for_nan...
+DEBUG: Type of is_null_series_for_nan: <class 'pandas.core.series.Series'>
+DEBUG: Calling .any() on is_null_series_for_nan...
+DEBUG: Result of .any(): False
+DEBUG: Type of the result from .any(): <class 'numpy.bool_'>
+DEBUG: Is the result a standard boolean? True
+DEBUG: Now attempting the 'if' statement using the verified boolean result...
+DEBUG: 'if' condition evaluated to False (No NaNs found).
+No NaNs found in column ('Close', 'SPY').
+--- fetch_data completed. Returning DataFrame with 6346 rows. ---
+Calculating RSI with period 14 for ticker SPY...
+DEBUG: Calculating RSI on column: ('Close', 'SPY')
+RSI calculation produced 14 NaN values initially.
+DataFrame length after dropping NaN RSI: 6332
+Prepared RSI data with 6332 samples.
+
+--- Debug Info Before Experiment Loop ---
+Type of rsi_data: <class 'numpy.ndarray'>
+Shape of rsi_data: (6332,)
+Total samples available in rsi_data for splitting: 6332
+---------------------------------------
+
+
+===== Starting Run 1/6: WaveNet_H16_Seq14 =====
+Config: {'run_id': 'WaveNet_H16_Seq14', 'model_type': 'wave', 'hidden_size': 16, 'activation_type': 'sin', 'learning_rate': 0.001, 'epochs': 30, 'sequence_length': 14, 'batch_size': 32}
+Data split sizes: Train=4432, Validation=949, Test=951
+Sequence shapes: X_train=(4418, 14), X_val=(935, 14), X_test=(937, 14)
+Initialized WAVE Model. Total parameters: 737
+Model path: rsi_models/WaveNet_H16_Seq14/wave-h16-act_sin-lr0p001-seq14-e30.pth
+Loading model state dictionary from rsi_models/WaveNet_H16_Seq14/wave-h16-act_sin-lr0p001-seq14-e30.pth...
+Model loaded successfully.
+Loaded pre-trained model.
+Evaluating model on test set...
+Evaluation finished. Time: 0.01s
+
+Persistence Baseline (Predict RSI(t-1)):
+  Baseline MSE:  21.552916
+  Baseline MAE:  3.555802
+  Baseline RMSE: 4.642512
+
+Model Performance (Unscaled RSI):
+  Model MSE:  21.306492
+  Model MAE:  3.646147
+  Model RMSE: 4.615896
+===== Finished Run 1/6: WaveNet_H16_Seq14 in 0.65s =====
+
+===== Starting Run 2/6: WaveNet_H24_Seq14 =====
+Config: {'run_id': 'WaveNet_H24_Seq14', 'model_type': 'wave', 'hidden_size': 24, 'activation_type': 'sin', 'learning_rate': 0.001, 'epochs': 30, 'sequence_length': 14, 'batch_size': 32}
+Data split sizes: Train=4432, Validation=949, Test=951
+Sequence shapes: X_train=(4418, 14), X_val=(935, 14), X_test=(937, 14)
+Initialized WAVE Model. Total parameters: 1,105
+Model path: rsi_models/WaveNet_H24_Seq14/wave-h24-act_sin-lr0p001-seq14-e30.pth
+Loading model state dictionary from rsi_models/WaveNet_H24_Seq14/wave-h24-act_sin-lr0p001-seq14-e30.pth...
+Model loaded successfully.
+Loaded pre-trained model.
+Evaluating model on test set...
+Evaluation finished. Time: 0.00s
+
+Persistence Baseline (Predict RSI(t-1)):
+  Baseline MSE:  21.552916
+  Baseline MAE:  3.555802
+  Baseline RMSE: 4.642512
+
+Model Performance (Unscaled RSI):
+  Model MSE:  21.878672
+  Model MAE:  3.726919
+  Model RMSE: 4.677464
+===== Finished Run 2/6: WaveNet_H24_Seq14 in 0.01s =====
+
+===== Starting Run 3/6: MLP_H_eq_Wave16_Relu_Seq14 =====
+Config: {'run_id': 'MLP_H_eq_Wave16_Relu_Seq14', 'model_type': 'mlp', 'hidden_size': 46, 'activation_type': 'relu', 'learning_rate': 0.001, 'epochs': 30, 'sequence_length': 14, 'batch_size': 32}
+Data split sizes: Train=4432, Validation=949, Test=951
+Sequence shapes: X_train=(4418, 14), X_val=(935, 14), X_test=(937, 14)
+Initialized MLP Model. Total parameters: 737
+Model path: rsi_models/MLP_H_eq_Wave16_Relu_Seq14/mlp-h46-act_relu-lr0p001-seq14-e30.pth
+Loading model state dictionary from rsi_models/MLP_H_eq_Wave16_Relu_Seq14/mlp-h46-act_relu-lr0p001-seq14-e30.pth...
+Model loaded successfully.
+Loaded pre-trained model.
+Evaluating model on test set...
+Evaluation finished. Time: 0.01s
+
+Persistence Baseline (Predict RSI(t-1)):
+  Baseline MSE:  21.552916
+  Baseline MAE:  3.555802
+  Baseline RMSE: 4.642512
+
+Model Performance (Unscaled RSI):
+  Model MSE:  21.488766
+  Model MAE:  3.751075
+  Model RMSE: 4.635598
+===== Finished Run 3/6: MLP_H_eq_Wave16_Relu_Seq14 in 0.01s =====
+
+===== Starting Run 4/6: MLP_H_eq_Wave16_Sin_Seq14 =====
+Config: {'run_id': 'MLP_H_eq_Wave16_Sin_Seq14', 'model_type': 'mlp', 'hidden_size': 46, 'activation_type': 'sin', 'learning_rate': 0.001, 'epochs': 30, 'sequence_length': 14, 'batch_size': 32}
+Data split sizes: Train=4432, Validation=949, Test=951
+Sequence shapes: X_train=(4418, 14), X_val=(935, 14), X_test=(937, 14)
+Initialized MLP Model. Total parameters: 737
+Model path: rsi_models/MLP_H_eq_Wave16_Sin_Seq14/mlp-h46-act_sin-lr0p001-seq14-e30.pth
+Loading model state dictionary from rsi_models/MLP_H_eq_Wave16_Sin_Seq14/mlp-h46-act_sin-lr0p001-seq14-e30.pth...
+Model loaded successfully.
+Loaded pre-trained model.
+Evaluating model on test set...
+Evaluation finished. Time: 0.00s
+
+Persistence Baseline (Predict RSI(t-1)):
+  Baseline MSE:  21.552916
+  Baseline MAE:  3.555802
+  Baseline RMSE: 4.642512
+
+Model Performance (Unscaled RSI):
+  Model MSE:  21.818010
+  Model MAE:  3.710623
+  Model RMSE: 4.670975
+===== Finished Run 4/6: MLP_H_eq_Wave16_Sin_Seq14 in 0.01s =====
+
+===== Starting Run 5/6: MLP_H_eq_Wave24_Relu_Seq14 =====
+Config: {'run_id': 'MLP_H_eq_Wave24_Relu_Seq14', 'model_type': 'mlp', 'hidden_size': 69, 'activation_type': 'relu', 'learning_rate': 0.001, 'epochs': 30, 'sequence_length': 14, 'batch_size': 32}
+Data split sizes: Train=4432, Validation=949, Test=951
+Sequence shapes: X_train=(4418, 14), X_val=(935, 14), X_test=(937, 14)
+Initialized MLP Model. Total parameters: 1,105
+Model path: rsi_models/MLP_H_eq_Wave24_Relu_Seq14/mlp-h69-act_relu-lr0p001-seq14-e30.pth
+Loading model state dictionary from rsi_models/MLP_H_eq_Wave24_Relu_Seq14/mlp-h69-act_relu-lr0p001-seq14-e30.pth...
+Model loaded successfully.
+Loaded pre-trained model.
+Evaluating model on test set...
+Evaluation finished. Time: 0.00s
+
+Persistence Baseline (Predict RSI(t-1)):
+  Baseline MSE:  21.552916
+  Baseline MAE:  3.555802
+  Baseline RMSE: 4.642512
+
+Model Performance (Unscaled RSI):
+  Model MSE:  21.739859
+  Model MAE:  3.739530
+  Model RMSE: 4.662602
+===== Finished Run 5/6: MLP_H_eq_Wave24_Relu_Seq14 in 0.01s =====
+
+===== Starting Run 6/6: MLP_H_eq_Wave24_Sin_Seq14 =====
+Config: {'run_id': 'MLP_H_eq_Wave24_Sin_Seq14', 'model_type': 'mlp', 'hidden_size': 69, 'activation_type': 'sin', 'learning_rate': 0.001, 'epochs': 30, 'sequence_length': 14, 'batch_size': 32}
+Data split sizes: Train=4432, Validation=949, Test=951
+Sequence shapes: X_train=(4418, 14), X_val=(935, 14), X_test=(937, 14)
+Initialized MLP Model. Total parameters: 1,105
+Model path: rsi_models/MLP_H_eq_Wave24_Sin_Seq14/mlp-h69-act_sin-lr0p001-seq14-e30.pth
+Loading model state dictionary from rsi_models/MLP_H_eq_Wave24_Sin_Seq14/mlp-h69-act_sin-lr0p001-seq14-e30.pth...
+Model loaded successfully.
+Loaded pre-trained model.
+Evaluating model on test set...
+Evaluation finished. Time: 0.00s
+
+Persistence Baseline (Predict RSI(t-1)):
+  Baseline MSE:  21.552916
+  Baseline MAE:  3.555802
+  Baseline RMSE: 4.642512
+
+Model Performance (Unscaled RSI):
+  Model MSE:  21.576628
+  Model MAE:  3.715683
+  Model RMSE: 4.645065
+===== Finished Run 6/6: MLP_H_eq_Wave24_Sin_Seq14 in 0.01s =====
+
+
+===== Overall Experiment Summary =====
+                       run_id model_type  hidden_size activation_type  sequence_length  learning_rate  epochs  total_params  test_rmse  baseline_rmse  test_mae  baseline_mae  test_mse  baseline_mse  training_time_s  eval_time_s
+0           WaveNet_H16_Seq14       wave           16             sin               14       0.001000      30           737   4.615896       4.642512  3.646147      3.555802 21.306492     21.552916                0     0.011128
+1           WaveNet_H24_Seq14       wave           24             sin               14       0.001000      30          1105   4.677464       4.642512  3.726919      3.555802 21.878672     21.552916                0     0.003942
+2  MLP_H_eq_Wave16_Relu_Seq14        mlp           46            relu               14       0.001000      30           737   4.635598       4.642512  3.751075      3.555802 21.488766     21.552916                0     0.007595
+3   MLP_H_eq_Wave16_Sin_Seq14        mlp           46             sin               14       0.001000      30           737   4.670975       4.642512  3.710623      3.555802 21.818010     21.552916                0     0.003932
+4  MLP_H_eq_Wave24_Relu_Seq14        mlp           69            relu               14       0.001000      30          1105   4.662602       4.642512  3.739530      3.555802 21.739859     21.552916                0     0.003919
+5   MLP_H_eq_Wave24_Sin_Seq14        mlp           69             sin               14       0.001000      30          1105   4.645065       4.642512  3.715683      3.555802 21.576628     21.552916                0     0.003849
+
+Total script execution time: 1.44s
+=======================================

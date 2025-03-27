@@ -1,0 +1,62 @@
+[
+    {
+        "run_id": "WaveNet_H16_Seq14",
+        "model_type": "wave",
+        "hidden_size": 16,
+        "activation_type": "sin",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+    },
+    {
+        "run_id": "WaveNet_H24_Seq14",
+        "model_type": "wave",
+        "hidden_size": 24,
+        "activation_type": "sin",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+    },
+    {
+        "run_id": "MLP_H_eq_Wave16_Relu_Seq14",
+        "model_type": "mlp",
+        "hidden_size": 46,  
+        "activation_type": "relu",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+    },
+    {
+        "run_id": "MLP_H_eq_Wave16_Sin_Seq14",
+        "model_type": "mlp",
+        "hidden_size": 46, 
+        "activation_type": "sin",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+    },
+     {
+        "run_id": "MLP_H_eq_Wave24_Relu_Seq14",
+        "model_type": "mlp",
+        "hidden_size": 69, 
+        "activation_type": "relu",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+     },
+     {
+        "run_id": "MLP_H_eq_Wave24_Sin_Seq14", 
+        "model_type": "mlp",
+        "hidden_size": 69,
+        "activation_type": "sin",
+        "learning_rate": 0.001,
+        "epochs": 30,
+        "sequence_length": 14,
+        "batch_size": 32
+     }
+]
