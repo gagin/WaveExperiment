@@ -26,20 +26,21 @@ The primary research question was whether the WaveLayer's richer per-connection 
 The WaveLayer Concept
 =====================
 
-The core idea of the **WaveLayer** is to replace the scalar weight ``W_ij`` with a parametric function incorporating trainable amplitude (``A_ij``), frequency (``ω_ij``), and phase (``φ_ij``).
+The core idea of the **WaveLayer** is to replace the scalar weight ``W_ij`` with a parametric function incorporating trainable amplitude (``A_ij``), frequency (``ω_ij``), and phase (``φ_ij``):
 
-The transformation applied to each input element ``x_i`` as it contributes to output neuron ``j`` is (LaTeX representation)::
+.. math::
 
    \text{contribution}_{ij} = A_{ij} \cdot \sin(\omega_{ij} \cdot x_i + \phi_{ij})
 
-The total pre-activation input to output neuron ``j`` is (LaTeX representation)::
+The total pre-activation input to output neuron ``j`` is:
+
+.. math::
 
    \text{output}_j = \sum_{i} [ A_{ij} \cdot \sin(\omega_{ij} \cdot x_i + \phi_{ij}) ] + B_j
 
-*(Note: GitHub's RST renderer does not process LaTeX math directives; the raw source is shown above).*
+*(Note: Math rendering depends on the RST viewer; GitHub does not render this directly from RST).*
 
 A network constructed using these layers introduces non-linearity and periodicity *within* the layer transformation itself.
-
 Methodology
 ===========
 
